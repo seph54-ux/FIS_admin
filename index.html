@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FIS</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&icon_names=search" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="dashboard">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="title">
+                <img src="./images/FIS.jpg" alt="FIS logo">
+                <h2>FIS</h2>
+            </div>
+            <ul>
+                <li>
+                    <button class="dropdown-btn">Dashboard</button>
+                    <ul class="dropdown-menu">
+                        <li><a href="#">Admin Overview</a></li>
+                        <li><a href="#">Health Monitoring</a></li>
+                    </ul>
+                </li>
+                <li><a href="#health-data">Health Data</a></li>
+                <li><a href="#">Geolocation</a></li>
+                <li><a href="#">Settings</a></li>
+                <li><a href="#">Help</a></li>
+                <li><button onclick="logout()">Logout</button></li>
+            </ul>
+        </div>
+        <!-- Main Content -->
+        <div class="main-content">
+            <header>
+                <div class="search-container">
+                    <span class="material-symbols-outlined">search</span>
+                    <input type="text" id="search" placeholder="Search">
+                </div>   
+                <div class="dropdown">
+                    <button class="dropdown-btn">LOCATION</button>
+                    <ul class="dropdown-menu">
+                        <li>BRGY.BALELE, TANAUAN CITY</li>
+                        <li>BRGY.TRAPICHE, TANAUAN CITY</li>
+                    </ul>
+                </div> 
+            </header>
+
+            <!--Doughnut-Charts-->
+            <section class="chart">
+                <div class="chart-container">
+                    <canvas id="myChart1"></canvas>
+                </div>
+                <div class="chart-container">
+                    <canvas id="myChart2"></canvas>
+                </div>
+                <div class="chart-container">
+                    <canvas id="myChart3"></canvas>
+                </div>
+            </section>
+
+            <!--Line-Chart-->
+            <section class="line_chart">
+                <div class="container2">
+                    <label for="date">Date</label>
+                    <input type="date" name="date" id="date">
+                    <button>Day</button>
+                    <button>Week</button>
+                    <button>Month</button>
+                    <button>Year</button>
+                </div>
+                <canvas id="myChart4"></canvas>
+            </section>
+
+
+            <!--health-data section-->
+            <section id="health-data">
+                <h1>Health Data</h1>
+                <h2 id="modalUserName">User Name</h2>
+                <div class="user-list">
+                  <ul id="userList"></ul>
+                </div>
+
+                <!-- Popup Container -->
+                <div id="popupContainer" class="popup-container">
+                    <div class="popup-content">
+                        <button id="closePopupButton" class="close-button">&times;</button>
+                        <div class="profile-picture">
+                            <img id="profilePic" src="https://via.placeholder.com/100" alt="Profile Picture">
+                        </div>
+                        <div class="user-details">
+                            <h3 id="popupUserName">Name: Unknown</h3>
+                            <p id="popupEmail">Email: Unknown</p>
+                            <p id="popupBirthday">Birthday: Unknown</p>
+                            <p id="popupPhone">Phone: Unknown</p>
+                            <p id="popupLocation">Location: Unknown</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!--add here-->
+            </section>
+
+        </div>
+        
+        <aside>
+            <div class="container1">
+                <div class="users">
+                    <p>Users</p>
+                    <h3 id="user">0</h3>
+                  </div>
+                  <div class="act-user">
+                    <p>Active</p>
+                    <h3 id="active">0</h3>
+                  </div>                  
+            </div>
+            <img src="./images/cityhall.jpg" alt="tanauan city hall">
+        </aside>
+    </div>
+
+    <button id="scrollToTopButton" title="Go to top">↑</button>
+
+
+    
+</body>
+
+    <script type="module">
+       // Import Firebase modules
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-auth.js";
+import { getDatabase } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-database.js";
+import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js";
+
+// Firebase Configuration for the web app (Admin data)
+const firebaseConfig = {
+    apiKey: "AIzaSyACRq6cWc47oJz-9mV6ui6gGzchOoyAg",
+    authDomain: "webapp-11ca5.firebaseapp.com",
+    databaseURL: "https://webapp-11ca5-default-rtdb.asia-southeast1.firebasedatabase.app/",
+    projectId: "webapp-11ca5",
+    storageBucket: "webapp-11ca5.appspot.com",
+    messagingSenderId: "755408563544",
+    appId: "1:755408563544:web:394492797e8b1b4cc9c92d"
+};
+
+// Firebase Configuration for the mobile app (User data)
+const firebaseConfig2 = {
+    apiKey: "AIzaSyBASE5EaikFXabYdgyhjhOHS4FTR18q3tk",
+    authDomain: "jerald-5d24c.firebaseapp.com",
+    databaseURL: "https://jerald-5d24c-default-rtdb.firebaseio.com",
+    projectId: "jerald-5d24c",
+    storageBucket: "jerald-5d24c.firebasestorage.app",
+    messagingSenderId: "358321522771",
+    appId: "1:358321522771:web:c1dac119db0bb8a5d3dea6",
+    measurementId: "G-7KSDNWLX11"
+};
+
+// Initialize Firebase apps
+const defaultApp = initializeApp(firebaseConfig); // Default app (Admin)
+const secondaryApp = initializeApp(firebaseConfig2, "secondaryApp"); // Secondary app (Users)
+
+// Get services for each app
+const auth = getAuth(defaultApp); // Auth for admin app
+const dbAdmin = getDatabase(defaultApp); // Realtime database for admin app
+const dbUsers = getFirestore(secondaryApp); // Firestore for user app
+
+// Function to open and populate the popup
+function openPopup(user) {
+    const popupContainer = document.getElementById("popupContainer");
+    const popupUserName = document.getElementById("popupUserName");
+    const popupEmail = document.getElementById("popupEmail");
+    const popupBirthday = document.getElementById("popupBirthday");
+    const popupPhone = document.getElementById("popupPhone");
+    const popupLocation = document.getElementById("popupLocation");
+    const profilePic = document.getElementById("profilePic");
+
+    // Populate the popup with user data
+    popupUserName.textContent = `Name: ${user.name || "Unknown"}`;
+    popupEmail.textContent = `Email: ${user.email || "Unknown"}`;
+    popupBirthday.textContent = `Birthday: ${user.birthdate || "Unknown"}`;
+    popupPhone.textContent = `Phone: ${user.phone || "Unknown"}`;
+    popupLocation.textContent = `Location: ${user.location || "Unknown"}`;
+    profilePic.src = user.profilePic || "https://via.placeholder.com/100";
+
+    // Show the popup
+    popupContainer.style.display = "flex";
+}
+
+// Function to close the popup
+function closePopup() {
+    const popupContainer = document.getElementById("popupContainer");
+    popupContainer.style.display = "none";
+}
+
+// Close popup when clicking outside the popup content
+document.addEventListener("click", (e) => {
+    const popupContainer = document.getElementById("popupContainer");
+    const popupContent = document.querySelector(".popup-content");
+
+    if (
+        popupContainer.style.display === "flex" &&
+        e.target === popupContainer
+    ) {
+        closePopup();
+    }
+});
+
+// Close popup with Escape key
+document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+        closePopup();
+    }
+});
+
+// Close popup with the close button
+document.getElementById("closePopupButton").addEventListener("click", closePopup);
+
+// Attach event listeners to list items
+async function fetchHealthDataUsers() {
+    try {
+        const usersRef = collection(dbUsers, "users");
+        const querySnapshot = await getDocs(usersRef);
+        const userList = document.getElementById("userList");
+
+        userList.innerHTML = ""; // Clear existing list
+
+        querySnapshot.forEach((doc) => {
+            const user = doc.data();
+            const listItem = document.createElement("li");
+            listItem.textContent = `${user.name} - ${user.email}`;
+            listItem.classList.add("user-item");
+
+            // Add click event to open the popup with user details
+            listItem.addEventListener("click", () => openPopup(user));
+
+            userList.appendChild(listItem);
+        });
+    } catch (error) {
+        console.error("Error fetching health data users:", error);
+        alert("Unable to fetch user data. Please try again later.");
+    }
+}
+
+// Fetch users on page load
+document.addEventListener("DOMContentLoaded", fetchHealthDataUsers);
+
+// Function to count total users from Firestore and set values
+async function countUsers() {
+    try {
+        // Reference to 'users' collection in Firestore
+        const usersRef = collection(dbUsers, "users");
+
+        // Get all documents in the 'users' collection
+        const querySnapshot = await getDocs(usersRef);
+
+        // Count the total number of users
+        const userCount = querySnapshot.size;
+
+        // Set the total users and active users count to the same number
+        document.getElementById("user").textContent = userCount;
+        document.getElementById("active").textContent = userCount;
+    } catch (error) {
+        console.error("Error counting users from Firestore:", error);
+        alert("Could not fetch user data. Please try again.");
+    }
+}
+
+// Call this function after DOM loads
+document.addEventListener("DOMContentLoaded", countUsers);
+
+// Logout Functionality
+function logout() {
+    signOut(auth)
+        .then(() => {
+            alert("Successfully logged out!");
+            window.location.replace("login.html");
+        })
+        .catch(error => {
+            console.error("Error logging out:", error);
+            alert("Error logging out. Please try again.");
+        });
+}
+window.logout = logout;
+
+ // Dropdown functionality
+ const dropdownButtons = document.querySelectorAll('.dropdown-btn');
+        dropdownButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                button.classList.toggle('active');
+                const dropdownMenu = button.nextElementSibling;
+                dropdownMenu.style.display = dropdownMenu.style.display === 'block' ? 'none' : 'block';
+            });
+        });
+
+        // Create Doughnut Chart
+        function createDoughnutChart(chartId, labels, data, colors) {
+            const ctx = document.getElementById(chartId).getContext('2d');
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: colors
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { display: true }
+                    }
+                }
+            });
+        }
+
+        // Create Line Chart
+        function createLineChart(chartId, labels, datasets) {
+            const ctx = document.getElementById(chartId).getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        }
+
+        // Initialize Charts
+        createDoughnutChart("myChart1", ["Critical"], [20, 80], ["#b91d47", "#B9B8B8"]);
+        createDoughnutChart("myChart2", ["At Risk"], [5, 95], ["#F8D136", "#B9B8B8"]);
+        createDoughnutChart("myChart3", ["Normal"], [90, 10], ["#6ADD3D", "#B9B8B8"]);
+
+        const lineChartData = [
+            { data: [3, 4, 0, 2, 1, 4, 1, 2, 3, 1], borderColor: "red", fill: false },
+            { data: [98, 95, 92, 93, 89, 94, 94, 92, 97, 95], borderColor: "green", fill: false },
+            { data: [7, 8, 11, 12, 15, 8, 6, 7, 9, 10], borderColor: "yellow", fill: false }
+        ];
+        createLineChart("myChart4", ["Sun", "Mon", "Tues", "Wed", "Thurs", "Fri", "Sat"], lineChartData);
+
+        // Get the button element
+const scrollToTopButton = document.getElementById("scrollToTopButton");
+
+// Show the button when scrolling down
+window.addEventListener("scroll", () => {
+    if (window.scrollY > 200) { // Show after 200px of scrolling
+        scrollToTopButton.style.display = "flex";
+    } else {
+        scrollToTopButton.style.display = "none";
+    }
+});
+
+// Scroll to the top of the page when the button is clicked
+scrollToTopButton.addEventListener("click", () => {
+    window.scrollTo({
+        top: 0,
+        behavior: "smooth" // Smooth scrolling
+    });
+});
+
+
+    </script>
+</body>
+</html>
